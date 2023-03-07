@@ -1,0 +1,19 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <div id="loginBlock">
+        <form asp-action="GameRoom" method="post">
+            <div class="form-group" style="align-content:center">
+                <h1 style="display:block; width:175px; margin:10px auto; align-content:center;">Welcome</h1>
+                <h4 style="display:block; width:105px; margin:10px auto; align-self:center;">to task#7</h4>
+                <label class="control-label" style="display:block; width:200px; margin:10px auto;">Логин</label>
+                <input id="userName" name="userName" type="text" class="form-control" style="display:block; width:200px; margin:10px auto;" />
+                <input id="loginBtn" type="submit" value="Войти в комнату" class="btn btn-outline-secondary" style="display:block; width:200px; margin:10px auto;" />
+                <div id="warn" class="text-danger" style="display:block; width:105px; margin:10px auto; align-self:center;"></div>
+            </div>
+        </form>
+    </div>
+</div>
+<script src="~/js/index-config.js"></script>

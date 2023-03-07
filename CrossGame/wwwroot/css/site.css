@@ -1,0 +1,55 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.cross-wrapper {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 10px;
+}
+
+.cross-field input {
+    width: 150px;
+    height: 150px;
+    border: none;
+    margin: 0;
+    padding: 0;
+    font-weight: bold;
+    font-size: 5em;
+}
+
+.cross-field div, table, tr, td {
+    margin: 0;
+    padding: 0;
+}
+
+.cross-field div {
+    border: 1px solid black;
+}
+
+.cross-head {
+    width: 80vw;
+    margin: auto;
+    text-align: center;
+    padding: 10px 10px;
+    color: #3746ff;
+}
