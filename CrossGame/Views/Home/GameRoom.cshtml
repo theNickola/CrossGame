@@ -3,24 +3,18 @@
 }
 
 <div id="loginBlock">
-    <label>MyName:</label>
-    <input id="userName" type="text" class="form-control" value="@ViewBag.UserName" />
-    <label>idGame:</label>
-    <input id="idGame" type="text" class="form-control" value="" />
-    <label>Имя второго игрока</label>
-    <input id="nameOtherPlayer" type="text" class="form-control" value="" />
+    <input id="userName" type="hidden" class="form-control" value="@ViewBag.UserName" />
+    <input id="idGame" type="hidden" class="form-control" value="" />
+    <input id="nameOtherPlayer" type="hidden" class="form-control" value="" />
 </div>
 
 <div class="cross-head">
-    <h3 id="header-game">Пожалуйста, подождите подключения игрока</h3>
+    <h3 id="header-game">Пожалуйста, подождите</h3>
 </div>
 <div class="cross-wrapper">
     <div>
         <div id="header"><h4>Привет, @ViewBag.UserName!</h4></div>
         <br />
-        <p>
-            some information
-        </p>
     </div>
     <div class="cross-field">
         <table style="border: 2px solid white; border-collapse: collapse">
@@ -32,6 +26,14 @@
                         <td>
                             <div>
                                 <input name="btnGame" class="btn btn-outline-primary" type="button" id=@(i.ToString()+j.ToString()) value="" disabled="disabled">
+                                <script>
+                                    document.getElementById('@(i.ToString() + j.ToString())').addEventListener("click", function (e) {
+                                        document.getElementById("@(i.ToString() + j.ToString())").value = "X";
+                                        for (let i = 0; i < btns.length; i++)
+                                            btns[i].disabled = true;
+                                        hubConnection.invoke("StepPlayer", document.getElementById("idGame").value, myName, "@(i.ToString() + j.ToString())");
+                                    });
+                                </script>
                             </div>
                         </td>
                     }
@@ -47,6 +49,7 @@
         .build();
     
     let myName = document.getElementById("userName").value;
+    let btns = document.getElementsByName("btnGame");
 
     hubConnection.on("Wait", function (idGame, Player1, Player2) {
         if(Player1===myName)
@@ -55,37 +58,53 @@
             document.getElementById("idGame").value = idGame;
         }
         if (Player2 === myName) {
-            document.getElementById("header-game").innerHTML = "Проверка состояния Player 1";
+            document.getElementById("header-game").innerHTML = "Проверка состояния второго игрока";
             document.getElementById("idGame").value = idGame;
             document.getElementById("nameOtherPlayer").value = Player1;
-            hubConnection.invoke("PingPlayers", document.getElementById("idGame").value);
-            document.getElementById("goGame").disabled = false;
+            hubConnection.invoke("PingPlayer1", document.getElementById("idGame").value, Player1);
         }
     });
 
-
-
-    hubConnection.on("ConnectionTest", function (idGame) {
-        if(idGame===document.getElementById("idGame").value)
+    hubConnection.on("ConnectionTest", function (idGame, player1) {
+        if(idGame === document.getElementById("idGame").value && myName === player1) 
         {
-            hubConnection.invoke("ResponsePing", idGame, myName);
+            hubConnection.invoke("GoGame", idGame);
         }
     });
 
-    hubConnection.on("GoGame", function (idGame, nameGoPlayer) {
+    hubConnection.on("GoStep", function (idGame, nameGoPlayer, otherStep) {
+        if (otherStep != "" && document.getElementById(otherStep).value === "")
+            document.getElementById(otherStep).value = "O";
         if (idGame === document.getElementById("idGame").value) {
             if (nameGoPlayer === myName) {
-                //let btns = document.getElementsByName("btnGame");
-                //for(let i=0; i<btns.length; i++)
-                //alert(btns[i].name);
                 document.getElementById("header-game").innerHTML = "Ваш ход";
-                
+                for(let i=0; i<btns.length; i++)
+                    if (btns[i].value == "")
+                        btns[i].disabled=false;
             }
             else
             {
                 document.getElementById("header-game").innerHTML = "Ожидайте, ход вашего противника";
             }
         }
+    });
+
+    hubConnection.on("End", function (idGame, winner, lostStep) {
+        if (idGame === document.getElementById("idGame").value)
+        {
+            if (winner === myName)
+                document.getElementById("header-game").innerHTML = "Вы выиграли!!!";
+            else if (winner === "") {
+                document.getElementById("header-game").innerHTML = "Ничья!!!";
+            }
+            else{
+                document.getElementById(lostStep).value = "O";
+                document.getElementById("header-game").innerHTML = "Вы проиграли!!!";
+            }
+            if(document.getElementById(lostStep).value!="O")
+                document.getElementById(lostStep).value = "O";
+        }
+
     });
 
 
