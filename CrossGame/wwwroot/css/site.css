@@ -40,10 +40,11 @@ body {
 .cross-field div, table, tr, td {
     margin: 0;
     padding: 0;
+    border: 1px solid black;
 }
 
 .cross-field div {
-    border: 1px solid black;
+    border: 0px solid black;
 }
 
 .cross-head {

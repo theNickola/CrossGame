@@ -5,8 +5,8 @@ namespace CrossGame.Models
     public class Game
     {
         public int Id { get; set; }
-        public string Status { get; set; } = "";
-        public string Player1 { get; set; } = "";
+        public string? Status { get; set; }
+        public string? Player1 { get; set; }
         public string StatePl1 { get; set; } = "";
         public string Player2 { get; set; } = "";
         public string StatePl2 { get; set; } = "";

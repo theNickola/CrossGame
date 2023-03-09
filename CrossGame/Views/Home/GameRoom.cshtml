@@ -3,74 +3,40 @@
 }
 
 <div id="loginBlock">
-    <input id="userName" type="text" value="@ViewBag.UserName" />
-    <input id="idGame" type="text" value="" />
-    <input id="numberPlayer" type="text" value="" />
+    <label>MyName:</label>
+    <input id="userName" type="text" class="form-control" value="@ViewBag.UserName" />
+    <label>idGame:</label>
+    <input id="idGame" type="text" class="form-control" value="" />
+    <label>Имя второго игрока</label>
+    <input id="nameOtherPlayer" type="text" class="form-control" value="" />
 </div>
 
-
 <div class="cross-head">
-    <h3 id="header-game"></h3>
+    <h3 id="header-game">Пожалуйста, подождите подключения игрока</h3>
 </div>
 <div class="cross-wrapper">
     <div>
         <div id="header"><h4>Привет, @ViewBag.UserName!</h4></div>
         <br />
-        <input type="button" id="sendBtn" value="Играть" style="width: 150px; height: 40px; margin-bottom: 10px;" />
+        <p>
+            some information
+        </p>
     </div>
     <div class="cross-field">
-        <table>
-            <tr>
-                <td>
-                    <div style="border-left: none; border-top: none;">
-                        <input name="btnGame" class="btn btn-outline-secondary" type="button" id="00" value="">
-                    </div>
-                </td>
-                <td>
-                    <div style="border-top: none;">
-                        <input name="btnGame" class="btn btn-outline-secondary" type="button" id="01" value="">
-                    </div>
-                </td>
-                <td>
-                    <div style="border-right: none; border-top: none;">
-                        <input name="btnGame" class="btn btn-outline-secondary" type="button" id="02" value="">
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <div style="border-left: none;">
-                        <input name="btnGame" class="btn btn-outline-secondary" type="button" id="10" value="">
-                    </div>
-                </td>
-                <td>
-                    <div>
-                        <input name="btnGame" class="btn btn-outline-secondary" type="button" id="11" value="">
-                    </div>
-                </td>
-                <td>
-                    <div style="border-right: none;">
-                        <input name="btnGame" class="btn btn-outline-secondary" type="button" id="12" value="">
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <div style="border-left: none; border-bottom: none;">
-                        <input name="btnGame" class="btn btn-outline-secondary" type="button" id="20" value="">
-                    </div>
-                </td>
-                <td>
-                    <div style="border-bottom: none;">
-                        <input name="btnGame" class="btn btn-outline-secondary" type="button" id="21" value="">
-                    </div>
-                </td>
-                <td>
-                    <div style="border-right: none; border-bottom: none;">
-                        <input name="btnGame" class="btn btn-outline-secondary" type="button" id="22" value="">
-                    </div>
-                </td>
-            </tr>
+        <table style="border: 2px solid white; border-collapse: collapse">
+            @for(int i=0;i<3;i++)
+            {
+                <tr>
+                    @for(int j=0;j<3;j++)
+                    {
+                        <td>
+                            <div>
+                                <input name="btnGame" class="btn btn-outline-primary" type="button" id=@(i.ToString()+j.ToString()) value="" disabled="disabled">
+                            </div>
+                        </td>
+                    }
+                    </tr>
+            }
         </table>
     </div>
 </div>
@@ -79,125 +45,54 @@
     const hubConnection = new signalR.HubConnectionBuilder()
     .withUrl("/gamecross")
         .build();
-        
-    document.getElementById("sendBtn").addEventListener("click", function () {
-        if (statusThisGame === '') {
-            document.getElementById("header-game").innerHTML = 'Ожидается подключения второго игрока';
-            document.getElementById("sendBtn").disabled = true;
-            hubConnection.invoke("Send", "id-game", "pre-start", userName, "pending", "", "", "", "");
-        }
-        if (statusThisGame === 'game') {
+    
+    let myName = document.getElementById("userName").value;
 
-            hubConnection.invoke("Send", idThisGame, statusThisGame, '', '', '', '', '00', '');
+    hubConnection.on("Wait", function (idGame, Player1, Player2) {
+        if(Player1===myName)
+        {
+            document.getElementById("header-game").innerHTML = "Ожидайте подключения второго игрока";
+            document.getElementById("idGame").value = idGame;
+        }
+        if (Player2 === myName) {
+            document.getElementById("header-game").innerHTML = "Проверка состояния Player 1";
+            document.getElementById("idGame").value = idGame;
+            document.getElementById("nameOtherPlayer").value = Player1;
+            hubConnection.invoke("PingPlayers", document.getElementById("idGame").value);
+            document.getElementById("goGame").disabled = false;
         }
     });
-    
-    hubConnection.on("Receive", function (idGame, statusGame, player1, statePl1, player2, statePl2, step, winner) {
-        if (statusGame === 'begin') {
-            document.getElementById("idGame").value = idGame;
-            idThisGame = idGame;
-            NumberPlayer(player1);
-            statusThisGame = 'game';
-            
-            document.getElementById("sendBtn").value = 'Отправить ход';
-            if (myNumberPlayer === 1 && statePl1 === "play") {
-                setStatusBtnDisabled(false);
-                document.getElementById("header-game").innerHTML = 'Ваш ход!';
-            }
-            else if (myNumberPlayer === 2 && statePl2 === "play") {
-                setStatusBtnDisabled(false);
-                document.getElementById("header-game").innerHTML = 'Ваш ход!';
+
+
+
+    hubConnection.on("ConnectionTest", function (idGame) {
+        if(idGame===document.getElementById("idGame").value)
+        {
+            hubConnection.invoke("ResponsePing", idGame, myName);
+        }
+    });
+
+    hubConnection.on("GoGame", function (idGame, nameGoPlayer) {
+        if (idGame === document.getElementById("idGame").value) {
+            if (nameGoPlayer === myName) {
+                //let btns = document.getElementsByName("btnGame");
+                //for(let i=0; i<btns.length; i++)
+                //alert(btns[i].name);
+                document.getElementById("header-game").innerHTML = "Ваш ход";
                 
             }
-            else {
-                document.getElementById("header-game").innerHTML = 'Ожидание хода другого игрока';
+            else
+            {
+                document.getElementById("header-game").innerHTML = "Ожидайте, ход вашего противника";
             }
         }
     });
-    
 
-    document.getElementById("00").addEventListener("click", function (e) {
-        let btnId = this.id;
-        alert("Send" + idThisGame + statusThisGame + myNumberPlayer + btnId);
 
-        for(var row of buttonsGame)
-            for(var ithem of row)
-                if(ithem.disabled===false && ithem.value!='')
-                    ithen.value='';
-        document.getElementById(btnId).disabled = false;
-        document.getElementById(btnId).value = 'X';
-    });
-        document.getElementById("01").addEventListener("click", function (e) {
-        let btnId = this.id;
-        alert("Send" + idThisGame + statusThisGame + myNumberPlayer + btnId);
 
-        for(var row of buttonsGame)
-            for(var ithem of row)
-                if(ithem.disabled===false && ithem.value!='')
-                    ithen.value='';
-        document.getElementById(btnId).disabled = false;
-        document.getElementById(btnId).value = 'X';
-    });
-        document.getElementById("02").addEventListener("click", function (e) {
-        let btnId = this.id;
-        alert("Send" + idThisGame + statusThisGame + myNumberPlayer + btnId);
-
-        for(var row of buttonsGame)
-            for(var ithem of row)
-                if(ithem.disabled===false && ithem.value!='')
-                    ithen.value='';
-        document.getElementById(btnId).disabled = false;
-        document.getElementById(btnId).value = 'X';
-    });
-
-    function NumberPlayer(pl1) {
-        if (userName === pl1)
-            myNumberPlayer = 1;
-        else
-            myNumberPlayer = 2;
-        document.getElementById('numberPlayer').value = myNumberPlayer;
-    }
-    
-    function setStatusBtnDisabled(valueDisabled) {
-        let btn00 = document.getElementById("00").disabled = valueDisabled;
-        let btn01 = document.getElementById("01").disabled = valueDisabled;
-        let btn02 = document.getElementById("02").disabled = valueDisabled;
-        let btn10 = document.getElementById("10").disabled = valueDisabled;
-        let btn11 = document.getElementById("11").disabled = valueDisabled;
-        let btn12 = document.getElementById("12").disabled = valueDisabled;
-        let btn20 = document.getElementById("20").disabled = valueDisabled;
-        let btn21 = document.getElementById("21").disabled = valueDisabled;
-        let btn22 = document.getElementById("22").disabled = valueDisabled;
-        document.getElementById("sendBtn").disabled = false;
-    }
-    /*
-    function setGameArea(valueGameArea)
-    {
-        for(let i=0, i<valueGameArea.length; i++)
-        {
-
-        }
-    }*/
-    
-    let idThisGame = 0;
-    let statusThisGame = '';
-    let userName = document.getElementById("userName").value;
-    let myNumberPlayer = 0;
-    setStatusBtnDisabled(true);
-    let compitedMoves = [
-        ['','',''],
-        ['','',''],
-        ['','','']
-    ];
-    let buttonsGame = [
-        [document.getElementById("00"), document.getElementById("01"), document.getElementById("02")],
-        [document.getElementById("10"), document.getElementById("11"), document.getElementById("12")],
-        [document.getElementById("20"), document.getElementById("21"), document.getElementById("22")]
-        ];
-    
     hubConnection.start()
         .then(function () {
-            document.getElementById("sendBtn").disabled = false;
+            hubConnection.invoke("Start", myName);
         })
         .catch(function (err) {
             return console.error(err.toString());

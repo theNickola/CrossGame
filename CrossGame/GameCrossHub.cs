@@ -6,92 +6,60 @@ namespace CrossGame
 {
     public class GameCrossHub : Hub
     {
-        private readonly ILogger<GameCrossHub> _logger;
         private readonly ApplicationContext db;
-        public GameCrossHub(ILogger<GameCrossHub> logger, ApplicationContext db)
+        public GameCrossHub(ApplicationContext db)
         {
-            _logger = logger;
             this.db = db;
         }
-        public async Task Send(
-            string idGame, 
-            string statusGame,
-            string player1, 
-            string statePl1,
-            string player2, 
-            string statePl2,
-            string step,
-            string winner)
+        public async Task Start(string userName)
         {
-            List<Game> games = db.Games.ToList();
-            Game? game = new Game();
-
-            _logger.LogInformation("!!!!!!!!!!!!!!!!!!!!!!!!!!!Сервер получил: " + idGame + "  " + statusGame + "  " + player1 + "  " + statePl1 + "  " + player2 + "  " + statePl2 + "  " + step);
-
-            if (statusGame == "pre-start")
+            var isWaitGame = db.Games.Any(g => g.Status == "wait");
+            if (isWaitGame)
             {
-                game = games.LastOrDefault(g => g.Status == "pre-start" && g.StatePl1 == "pending");
-                if (game != null)
-                {
-                    game.Player2 = player1;
-                    game.Status = "begin";
-                    Random rndPlayer = new Random();
-                    int firstPlayer = rndPlayer.Next(1, 3);
-                    if (firstPlayer == 1)
-                    {
-                        game.StatePl1 = "play";
-                        game.StatePl2 = "stop";
-                    }
-                    else
-                    {
-                        game.StatePl1 = "stop";
-                        game.StatePl2 = "play";
-                    }
-                    await db.SaveChangesAsync();
-                    _logger.LogInformation("!!!!!!!!!!!!!!!!!!!!!!!!!2nd User connected: " + game);
-                    await Clients.All.SendAsync("Receive", 
-                        game.Id, 
-                        game.Status,
-                        game.Player1, 
-                        game.StatePl1,
-                        game.Player2, 
-                        game.StatePl2,
-                        game.Step,
-                        game.Winner);
-                }
+                var waitGame = db.Games.First(g => g.Status == "wait");
+                waitGame.Player2 = userName;
+                db.Update(waitGame);
+                db.SaveChanges();
+                await Clients.All.SendAsync("Wait", waitGame.Id, waitGame.Player1, waitGame.Player2);
+            }
+            else
+            {
+                Game newGame = new() { Player1 = userName, Status = "wait" };
+                db.Games.Add(newGame);
+                db.SaveChanges();
+                await Clients.All.SendAsync("Wait", newGame.Id, newGame.Player1, newGame.Player2);
+            }
+        }
+        public async Task PingPlayers(string idGame)
+        {
+            Console.WriteLine("??????????????????????????");
+            await Clients.All.SendAsync("ConnectionTest", idGame);
+        }
+        public async Task ResponsePing(string idGame, string userName)
+        {
+            var currentGame = db.Games.First(g => g.Id == Convert.ToInt32(idGame));
+            if(currentGame.Player1 == userName)
+                currentGame.StatePl1 = "OK";
+            if (currentGame.Player2 == userName)
+            {
+                currentGame.StatePl2 = "OK";
+                //await Clients.All.SendAsync("DoYouReady", currentGame.Player1);
+            }
+
+            if(currentGame.StatePl1=="OK" && currentGame.StatePl2=="OK")
+            {
+                string goPlayer;
+                var numberPlayerForStep1 = new Random().Next(0, 2);
+                if (numberPlayerForStep1 == 1)
+                    goPlayer = currentGame.Player1;
                 else
-                {
-                    game = new Game() { Status = statusGame, Player1 = player1, StatePl1 = statePl1 };
-                    db.Games.Add(game);
-                    await db.SaveChangesAsync();
-                    _logger.LogInformation("!!!!!!!!!!!!!!!!!!!!!!!!!!Created Game "+ game);
-                }
+                    goPlayer = currentGame.Player2;
+                Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!! step1 for :" + goPlayer + "  " + numberPlayerForStep1);
+                currentGame.Status = "go";
+                await Clients.All.SendAsync("GoGame", idGame, goPlayer);
             }
-            
-            if (statusGame == "game")
-            {
-                _logger.LogInformation("?????????????????????????GoGame");
-                game = games.LastOrDefault(g => g.Id == Convert.ToInt32(idGame));
-                _logger.LogInformation("!!!!!!!!!!!!!!!!!!!!!!!!  " + game);
-                if (game != null)
-                {
-                    game.Status = statusGame;
-                    await db.SaveChangesAsync();
-                }
-                _logger.LogInformation("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Сервер отправляет: " + game);
-                await Clients.All.SendAsync("Receive", 
-                    game.Id, 
-                    game.Status,
-                    game.Player1, 
-                    game.StatePl1,
-                    game.Player2, 
-                    game.StatePl2,
-                    game.Step,
-                    game.Winner);
-            }
-            
-
-
+            db.Games.Update(currentGame);
+            db.SaveChanges();
         }
     }
 }

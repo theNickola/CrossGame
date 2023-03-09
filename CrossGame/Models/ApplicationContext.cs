@@ -13,16 +13,16 @@ namespace CrossGame.Models
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Game>().HasData(new Game { 
-                Id = 1, 
-                Status = "End", 
-                Player1="User1", 
-                StatePl1="stop", 
-                Player2="User2", 
-                StatePl2="stop", 
-                Step="no", 
-                Winner="no"
-            });
+            //modelBuilder.Entity<Game>().HasData(new Game { 
+            //    Id = 1, 
+            //    Status = "End", 
+            //    Player1="User1", 
+            //    StatePl1="stop", 
+            //    Player2="User2", 
+            //    StatePl2="stop", 
+            //    Step="no", 
+            //    Winner="no"
+            //});
         }
     }
 }
